@@ -1,3 +1,7 @@
 
 ssh ciecierskij@gamma mini.pw.edu.pl
 ssh ciecierskij@gpunode3.mini.pw.edu.pl
+
+http://link.springer.com/chapter/10.1007%2F978-3-540-77220-0_21
+
+https://escholarship.org/uc/item/8qr166v2#page-1

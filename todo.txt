@@ -1,0 +1,3 @@
+
+ssh ciecierskij@gamma mini.pw.edu.pl
+ssh ciecierskij@gpunode3.mini.pw.edu.pl

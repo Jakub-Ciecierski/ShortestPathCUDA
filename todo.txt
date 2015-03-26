@@ -5,3 +5,8 @@ ssh ciecierskij@gpunode3.mini.pw.edu.pl
 http://link.springer.com/chapter/10.1007%2F978-3-540-77220-0_21
 
 https://escholarship.org/uc/item/8qr166v2#page-1
+
+
+http://stackoverflow.com/questions/27106752/why-is-the-second-cuda-kernel-needed-for-computing-the-single-source-shortest-pa
+
+http://cvit.iiit.ac.in/papers/Pawan07accelerating.pdf

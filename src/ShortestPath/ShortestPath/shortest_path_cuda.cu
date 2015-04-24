@@ -1,127 +1,225 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include "graph.h"
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "shortest_path_cuda.cuh"
+
+#define MAX_GRID_DIM_SIZE 65535
+
+#define MAX_BLOCK_THREAD_COUNT 512
+
+#define MAX_BLOCK_DIM_SIZE 512
 
 #define INF 99999
 
-__host__
-void matrixMultiplication(float* A, float* B, float* C, int n)
+#define ERR(err) (printf("%s in %s at line %d\n", cudaGetErrorString(err), __FILE__, __LINE__),\
+                    exit(EXIT_FAILURE))
+
+__device__
+int getWeight(int* graphMatrix, int n, int v, int u)
 {
-    // size in bytes
-    int size = n*n*sizeof(float);
-    // device vectors
-    float *d_A, *d_B, *d_C;
+    return graphMatrix[n*v + u];
+}
+
+__global__
+void shortestPathRelaxationKernel(int* graphMatrix, int* distance,
+                                    int* local_distance, int* mask, int* previous, int n)
+{
+    int v = threadIdx.x + blockDim.x*blockIdx.x;
+    
+    // if tid is in bound of the vector and
+    // if tid is in the mask
+    if (v < n && mask[v]){
+        // remove this vertex from mask
+        mask[v] = 0;
+        int u = 0;
+        for (u = 0; u < n; u++){
+            // get weight of each other vertex
+            int weight = graphMatrix[n*v + u];
+            // if it is a neighbor
+            if (weight > 0){
+                // Local distance relaxation
+                if (local_distance[u] > distance[v] + weight){
+                    local_distance[u] = distance[v] + weight;
+                    previous[u] = v;
+                }
+                    
+            }
+        }
+    }
+}
+
+__global__
+void shortestPathUpdateDistanceKernel(int* graphMatrix, int* distance,
+                                        int* local_distance, int* mask, int* previous, int n)
+{
+    int v = threadIdx.x + blockDim.x*blockIdx.x;
+    if (v < n){
+        if (distance[v] > local_distance[v]){
+            distance[v] = local_distance[v];
+            mask[v] = 1;
+        }
+        local_distance[v] = distance[v];
+    }
+}
+
+/**
+ * Returns 1 (true) if array is empty - all vertices have been marked 0,
+ * 0 (false) otherwise
+ */
+__host__ 
+int isEmpty(int* mask, int n)
+{
+    int i = 0;
+    for (i = 0; i < n; i++){
+        if (mask[i] == 1)
+            return 0;
+    }
+    return 1;
+}
+
+__host__ 
+void shortestPathLogic(int* d_graphMatrix, int* d_distance,
+                       int* d_local_distance, int* d_mask, int* d_previous, int n)
+{
+    int size = n*sizeof(int);
+    int sizeGraph= n*sizeof(int);
+
+    int* mask = (int*)malloc(size);
+    int* local_distance = (int*)malloc(size);
+    int* graphMatrix = (int*)malloc(sizeGraph);
 
     cudaError_t err;
+    if ((err = cudaMemcpy(mask, d_mask, size, cudaMemcpyDeviceToHost)) != cudaSuccess) ERR(err);
+    if ((err = cudaMemcpy(graphMatrix, d_graphMatrix, sizeGraph, cudaMemcpyDeviceToHost)) != cudaSuccess) ERR(err);
 
-    // (address of the pointer, size in bytes)
-    err = cudaMalloc((void**)&d_A, size);
-    if (err != cudaSuccess) {
-        printf("%s in %s at line %d\n",
-            cudaGetErrorString(err), __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-    err = cudaMalloc((void**)&d_B, size);
-    if (err != cudaSuccess) {
-        printf("%s in %s at line %d\n",
-            cudaGetErrorString(err), __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-    err = cudaMalloc((void**)&d_C, size);
-    if (err != cudaSuccess) {
-        printf("%s in %s at line %d\n",
-            cudaGetErrorString(err), __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
+    int i = 0;
+
+    for (i = 0; i<n; ++i)
+    {
+        int j = 0;
+        printf("| ");
+        for (j = 0; j<n; ++j)
+        {
+            printf("%d", graphMatrix[i*n + j]);
+            printf(" ");
+        }
+        printf("|\n");
     }
 
-    printf("Alloced memory on device \n");
+    // TODO check if gridX is greater than MAX_GRID_DIM_SIZE
+    int gridX = ((n - 1) / MAX_BLOCK_DIM_SIZE) + 1;
+    int blockX = MAX_BLOCK_DIM_SIZE;
 
-    // (dest, source, size in bytes, type of transfer)
-    cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
-
-    printf("Copied memory to device \n");
-    // The matrix C is devided into (n / tile_width) smaller submatrices blocks
-    // of dim (tile_width x tile_width) each
-    // x, y, z
-    dim3 DimGrid(n / TILE_WIDTH, n / TILE_WIDTH, 1);
-    dim3 DimBlock(TILE_WIDTH, TILE_WIDTH, 1);
+    dim3 DimGrid(gridX, 1, 1);
+    dim3 DimBlock(blockX, 1, 1);
 
     printf("DimGrid: x: %d, y: %d, z: %d \n", DimGrid.x, DimGrid.y, DimGrid.z);
     printf("DimBlock: x: %d, y: %d, z: %d \n", DimBlock.x, DimBlock.y, DimBlock.z);
 
-    //call the kernel function
-    matrixMultiplicationKernel << <DimGrid, DimBlock >> >(d_A, d_B, d_C, n);
+    while (isEmpty(mask, n) == 0){
 
-    // get the computed vector back to host
-    cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
+        shortestPathRelaxationKernel << <DimGrid, DimBlock >> >(d_graphMatrix, d_distance, 
+                                                                d_local_distance, d_mask, d_previous, n);
 
-    cudaFree(d_A);
-    cudaFree(d_B);
-    cudaFree(d_C);
+        if ((err = cudaMemcpy(mask, d_mask, size, cudaMemcpyDeviceToHost)) != cudaSuccess) ERR(err);
+        if ((err = cudaMemcpy(local_distance, d_local_distance, size, cudaMemcpyDeviceToHost)) != cudaSuccess) ERR(err);
+
+        printf("\nBefore Distance update \n\n");
+
+        for (i = 0; i < n; i++){
+            printf("mask[%d] = %d\n", i, mask[i]);
+        }
+        printf("\n");
+        for (i = 0; i < n; i++){
+            printf("local_distance[%d] = %d\n", i, local_distance[i]);
+        }
+
+        shortestPathUpdateDistanceKernel << <DimGrid, DimBlock >> >(d_graphMatrix, d_distance,
+                                                                d_local_distance, d_mask, d_previous, n);
+
+        if ((err = cudaMemcpy(mask, d_mask, size, cudaMemcpyDeviceToHost)) != cudaSuccess) ERR(err);
+        if ((err = cudaMemcpy(local_distance, d_local_distance, size, cudaMemcpyDeviceToHost)) != cudaSuccess) ERR(err);
+
+        printf("After Distance update \n\n");
+        for (i = 0; i < n; i++){
+            printf("mask[%d] = %d\n", i, mask[i]);
+        }
+        printf("\n");
+        for (i = 0; i < n; i++){
+            printf("local_distance[%d] = %d\n", i, local_distance[i]);
+        }
+    }
 }
 
 __host__
-void shortestPath(graph_t* graph, int source, int* distance,  int* previous)
+void shortestPathInit(int* graphMatrix, int n, int source, int* distance, int* previous)
 {
-    int n = graph->num_vertices;
-
-    int* local_distance = (int*)malloc(n * sizeof(int));
+    /********** INITIATE CPU ARRAYS **********/
+    int graphSize = n*n*sizeof(int);
+    int size = n*sizeof(int);
+    // distance vector
+    int* local_distance = (int*)malloc(size);
+    // flag vector
+    int* mask = (int*)malloc(size);
 
     int i = 0;
     for (i = 0; i < n; i++)
     {
         distance[i] = INF;
         local_distance[i] = INF;
+        mask[i] = 0;
         previous[i] = -1;
     }
-    distance[source] = INF;
-    local_distance[source] = INF;
 
-    graph_t* d_graph;
+    printf("\n\n");
+    for (i = 0; i<n; ++i)
+    {
+        int j = 0;
+        printf("| ");
+        for (j = 0; j<n; ++j)
+        {
+            printf("%d", graphMatrix[i*n + j]);
+            printf(" ");
+        }
+        printf("|\n");
+    }
+    printf("\n\n");
+
+    // mark source as visited
+    mask[source] = 1;
+    distance[source] = 0;
+    local_distance[source] = 0;
+
+    /*********** INITIATE DEVICE ARRAYS ***********/
+    int* d_graphMatrix;
     int* d_distance;
     int* d_local_distance;
+    int* d_mask;
     int* d_previous;
 
     cudaError_t err;
 
-    // (address of the pointer, size in bytes)
-    err = cudaMalloc((void**)&d_A, size);
-    if (err != cudaSuccess) {
-        printf("%s in %s at line %d\n",
-            cudaGetErrorString(err), __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-}
+    /*********** MEMORY ALLOCATION ***********/
+    if ((err = cudaMalloc((void**)&d_graphMatrix, graphSize)) != cudaSuccess) ERR(err);
+    if ((err = cudaMalloc((void**)&d_distance, size)) != cudaSuccess) ERR(err);
+    if ((err = cudaMalloc((void**)&d_local_distance, size)) != cudaSuccess) ERR(err);
+    if ((err = cudaMalloc((void**)&d_mask, size)) != cudaSuccess) ERR(err);
+    if ((err = cudaMalloc((void**)&d_previous, size)) != cudaSuccess) ERR(err);
 
-__host__
-int main()
-{
-    graph_t* graph = createGraph(5);
-    addEdge(graph, 0, 3, 2);
-    addEdge(graph, 0, 4, 1);
-    addEdge(graph, 1, 2, 1);
-    addEdge(graph, 2, 3, 3);
-    addEdge(graph, 4, 2, 3);
-    addEdge(graph, 3, 1, 2);
+    /*********** COPY MEMORY ***********/
+    if ((err = cudaMemcpy(d_graphMatrix, graphMatrix, graphSize, cudaMemcpyHostToDevice)) != cudaSuccess) ERR(err);
+    if ((err = cudaMemcpy(d_distance, distance, size, cudaMemcpyHostToDevice)) != cudaSuccess) ERR(err);
+    if ((err = cudaMemcpy(d_local_distance, local_distance, size, cudaMemcpyHostToDevice)) != cudaSuccess) ERR(err);
+    if ((err = cudaMemcpy(d_mask, mask, size, cudaMemcpyHostToDevice)) != cudaSuccess) ERR(err);
+    if ((err = cudaMemcpy(d_previous, previous, size, cudaMemcpyHostToDevice)) != cudaSuccess) ERR(err);
 
-    showGraph(graph);
+    // work ...
+    shortestPathLogic(d_graphMatrix, d_distance, d_local_distance, d_mask, d_previous, n);
 
-    int num_vertices = graph->num_vertices;
-    int* distance = (int*)malloc(num_vertices * sizeof(int));
-    int* previous = (int*)malloc(num_vertices * sizeof(int));
+    if ((err = cudaMemcpy(distance, d_distance, size, cudaMemcpyDeviceToHost)) != cudaSuccess) ERR(err);
+    if ((err = cudaMemcpy(previous, d_previous, size, cudaMemcpyDeviceToHost)) != cudaSuccess) ERR(err);
 
-    clock_t start, end;
-    double delta;
-    start = clock();
-
-
-    end = clock();
-    printf("Start: %d End: %d \n", start, end);
-    delta = ((double)(end - start)) / CLOCKS_PER_SEC;
-    printf("Finished after %f \n", delta);
-
-    return EXIT_SUCCESS;
+    /*********** FREE MEMORY ***********/
+    if ((err = cudaFree(d_graphMatrix)) != cudaSuccess) ERR(err);
+    if ((err = cudaFree(d_distance)) != cudaSuccess) ERR(err);
+    if ((err = cudaFree(d_local_distance)) != cudaSuccess) ERR(err);
+    if ((err = cudaFree(d_mask)) != cudaSuccess) ERR(err);
+    if ((err = cudaFree(d_previous)) != cudaSuccess) ERR(err);
 }

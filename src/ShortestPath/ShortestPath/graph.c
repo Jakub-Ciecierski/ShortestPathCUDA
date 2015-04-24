@@ -46,7 +46,7 @@ int areConnected(graph_t* graph, int u, int v)
     return graph->adjMatrix[u * graph->num_vertices + v] != 0 ?
         1 : 0;
 }
-
+/*
 neighborhood_t* getNeighbors(graph_t* graph, int u)
 {
     neighborhood_t* nb = (neighborhood_t*)malloc(sizeof(neighborhood_t));
@@ -67,7 +67,7 @@ neighborhood_t* getNeighbors(graph_t* graph, int u)
 
     nb->length = length;
     return nb;
-}
+}*/
 
 void deleteGraph(graph_t* graph)
 {

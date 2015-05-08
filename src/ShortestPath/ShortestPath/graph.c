@@ -46,7 +46,7 @@ int areConnected(graph_t* graph, int u, int v)
     return graph->adjMatrix[u * graph->num_vertices + v] != 0 ?
         1 : 0;
 }
-/*
+
 neighborhood_t* getNeighbors(graph_t* graph, int u)
 {
     neighborhood_t* nb = (neighborhood_t*)malloc(sizeof(neighborhood_t));
@@ -67,7 +67,7 @@ neighborhood_t* getNeighbors(graph_t* graph, int u)
 
     nb->length = length;
     return nb;
-}*/
+}
 
 void deleteGraph(graph_t* graph)
 {
@@ -97,4 +97,73 @@ void err_exit(char* msg)
 {
     printf("[Fatal Error]: %s \nExiting...\n", msg);
     exit(1);
+}
+
+////////////////////
+/// two dimensional map - n x n
+/// Map based on Neumann neightborhood
+////////////////////
+graph_t* mapToGraph(int* map, int n, int m)
+{
+    int i;
+    int j;
+    graph_t* graph = createGraph(n*m);
+
+    // for each cell in the map, create a its connection in the graph
+    // maximum 4 connections per cell
+    for (i = 0; i < n; i++) // row
+    {
+        for (j = 0; j < m; j++) // columns
+        {
+            int upper_i = i-1;
+            int upper_j = j;
+
+            int right_i = i;
+            int right_j = j + 1;
+
+            int bottom_i = i + 1;
+            int bottom_j = j;
+
+            int left_i = i;
+            int left_j = j - 1;
+
+            if (upper_i >= 0) {
+                addEdge(graph, i*n + j, upper_i*n + upper_j, map[upper_i*n + upper_j]);
+            }
+                
+            if (right_j <= n - 1){
+                addEdge(graph, i*n + j, right_i*n + right_j, map[right_i*n + right_j]);
+            }
+                
+            if (bottom_i <= n - 1){
+                addEdge(graph, i*n + j, bottom_i*n + bottom_j, map[bottom_i*n + bottom_j]);
+            }
+
+            if (left_j >= 0){
+                addEdge(graph, i*n + j, left_i*n + left_j, map[left_i*n + left_j]);
+            }
+                
+        }
+    }
+    return graph;
+}
+
+int* getShortestPath(int* previous, int n, int source, int dest)
+{
+    int i;
+    int prev_node = previous[dest];
+    int* shortest_path = (int*)malloc(n * sizeof(int));
+    for (i = 0; i < n; i++)
+        shortest_path[i] = -1;
+
+    shortest_path[0] = dest;
+
+    for (i = 1; i < n; i++){
+        shortest_path[i] = prev_node;
+        prev_node = previous[prev_node];
+
+        if (prev_node == source)
+            break;
+    }
+    return shortest_path;
 }

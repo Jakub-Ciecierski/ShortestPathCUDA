@@ -42,4 +42,8 @@ void showGraph(graph_t* graph);
 
 void err_exit(char* msg);
 
+graph_t* mapToGraph(int* map, int n, int m);
+
+int* getShortestPath(int* previous, int n, int source, int dest);
+
 #endif

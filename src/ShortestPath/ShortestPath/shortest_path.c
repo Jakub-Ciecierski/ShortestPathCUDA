@@ -79,7 +79,7 @@ int dij_minVertex(int* distance, int* visited, int n)
 
     return min;
 }
-/*
+
 void dijkstra(graph_t* graph, int source, int dest, int* distance, int* previous)
 {
     int num_vertices = graph->num_vertices;
@@ -114,4 +114,4 @@ void dijkstra(graph_t* graph, int source, int dest, int* distance, int* previous
             }
         }
     }
-}*/
+}

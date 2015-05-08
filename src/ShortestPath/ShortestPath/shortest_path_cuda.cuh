@@ -23,11 +23,11 @@ int getWeight(int* graphMatrix, int n, int v, int u);
 
 __global__
 void shortestPathRelaxationKernel(int* graphMatrix, int* distance,
-                                    int* local_distance, int* mask, int* previous, int n);
+                                    int* local_distance, int* mask, int* previous, int dest, int n);
 
 __global__
 void shortestPathUpdateDistanceKernel(int* graphMatrix, int* distance,
-                                        int* local_distance, int* mask, int* previous, int n);
+                                        int* local_distance, int* mask, int* previous, int dest,int n);
 
 /**
 * Returns 1 (true) if array is empty - all vertices have been marked 0,
@@ -39,9 +39,9 @@ int isEmpty(int* mask, int n);
 
 __host__
 void shortestPathLogic(int* d_graphMatrix, int* d_distance,
-                        int* d_local_distance, int* d_mask, int* d_previous, int n);
+                        int* d_local_distance, int* d_mask, int* d_previous, int dest,int n);
 
 __host__
-void shortestPathInit(int* graphMatrix, int n, int source, int* distance, int* previous);
+void shortestPathInit(int* graphMatrix, int n, int source, int dest, int* distance, int* previous);
 
 #endif

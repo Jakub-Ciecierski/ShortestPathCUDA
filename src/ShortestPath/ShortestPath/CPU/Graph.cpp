@@ -1,15 +1,13 @@
-#include "graph.h"
-#include <stdlib.h>
+#include "Graph.h"
 
 graph_t* createGraph(int n)
 {
     graph_t* graph = (graph_t*)malloc(sizeof(graph_t));
-    if (!graph)
-        err_exit("createGraph, malloc()");
+    if (!graph) ERR("createGraph, malloc()");
+
 
     graph->adjMatrix = (int*)malloc(n*n * sizeof(int));
-    if (!graph->adjMatrix)
-        err_exit("createGraph, malloc()");
+    if (!graph->adjMatrix) ERR("createGraph malloc()");
 
     int i = 0;
     for (i = 0; i < n*n; i++)
@@ -60,7 +58,7 @@ neighborhood_t* getNeighbors(graph_t* graph, int u)
     {
         if (areConnected(graph, u, i) == 1)
         {
-            nb->vertices = realloc(nb->vertices, (++length)*sizeof(int));
+            nb->vertices = (int*)realloc(nb->vertices, (++length)*sizeof(int));
             nb->vertices[length - 1] = i;
         }
     }
@@ -131,7 +129,7 @@ graph_t* mapToGraph(int* map, int n, int m)
                 addEdge(graph, i*n + j, upper_i*n + upper_j, map[upper_i*n + upper_j]);
             }
                 
-            if (right_j <= n - 1){
+            if (right_j <= m - 1){
                 addEdge(graph, i*n + j, right_i*n + right_j, map[right_i*n + right_j]);
             }
                 
@@ -153,12 +151,18 @@ int* getShortestPath(int* previous, int n, int source, int dest)
     int i;
     int prev_node = previous[dest];
     int* shortest_path = (int*)malloc(n * sizeof(int));
+    if (shortest_path == NULL) ERR("shortest_path malloc");
+
     for (i = 0; i < n; i++)
         shortest_path[i] = -1;
 
     shortest_path[0] = dest;
 
     for (i = 1; i < n; i++){
+        if (prev_node < 0) {
+            fprintf(stderr, " << Path does not exist \n");
+            return shortest_path;
+        }
         shortest_path[i] = prev_node;
         prev_node = previous[prev_node];
 

@@ -1,6 +1,4 @@
-#include "shortest_path.h"
-#define INF 99999;
-#define NEG_INF -99999;
+#include "ShortestPath.h"
 
 void bellmanFord(graph_t* graph, int source, int* distance, int* previous)
 {
@@ -54,7 +52,7 @@ void bellmanFord(graph_t* graph, int source, int* distance, int* previous)
     }
 }
 
-int dij_minVertex(int* distance, int* visited, int n)
+int dijkstra_minVertex(int* distance, int* visited, int n)
 {
     int i = 0;
     int min = 0;
@@ -80,7 +78,20 @@ int dij_minVertex(int* distance, int* visited, int n)
     return min;
 }
 
-void dijkstra(graph_t* graph, int source, int dest, int* distance, int* previous)
+void dijkstra_relax(int* distance, int* previous, int v, int u, int weight)
+{
+    if (weight > 0)
+    {
+        int dist = distance[v] + weight;
+        if (dist < distance[u])
+        {
+            distance[u] = dist;
+            previous[u] = v;
+        }
+    }
+}
+
+void dijkstra_graph(graph_t* graph, int source, int dest, int* distance, int* previous)
 {
     int num_vertices = graph->num_vertices;
     int* visited = (int*)malloc(num_vertices*sizeof(int)); // 0 unvisited, 1 visited
@@ -98,7 +109,7 @@ void dijkstra(graph_t* graph, int source, int dest, int* distance, int* previous
     int u = source;
     while (u != dest)
     {
-        u = dij_minVertex(distance, visited, num_vertices);
+        u = dijkstra_minVertex(distance, visited, num_vertices);
         visited[u] = 1;
 
         int j = 0;
@@ -112,6 +123,75 @@ void dijkstra(graph_t* graph, int source, int dest, int* distance, int* previous
                 distance[v] = dist;
                 previous[v] = u;
             }
+        }
+    }
+}
+
+void dijkstra_map(int* map, int n, int m, int source, int dest, int* distance, int* previous)
+{
+    int i, j;
+    int v, u;
+    int row, col;
+    int num_vertices = n*m;
+    int* visited = (int*)malloc(num_vertices*sizeof(int)); // 0 unvisited, 1 visited
+
+    for (i = 0; i < num_vertices; i++)
+    {
+        visited[i] = 0;
+        distance[i] = INF;
+        previous[i] = -1;
+    }
+    distance[source] = 0;
+
+    v = source;
+    while (v != dest)
+    {
+        v = dijkstra_minVertex(distance, visited, num_vertices);
+        row = v / m;
+        col = v % m;
+
+        visited[v] = 1;
+
+        //printf("\n\nRound# v:[%d] = row: %d, col: %d \n", v, row, col);
+
+        int upper_i = row - 1;
+        int upper_j = col;
+
+        int right_i = row;
+        int right_j = col + 1;
+
+        int bottom_i = row + 1;
+        int bottom_j = col;
+
+        int left_i = row;
+        int left_j = col - 1;
+
+        if (upper_i >= 0) {
+            u = upper_i*m + upper_j;
+            //printf("NB# u:[%d] = row: %d, col: %d \n", u, upper_i, upper_j);
+            int weight = map[u];
+            dijkstra_relax(distance, previous, v, u, weight);
+        }
+
+        if (right_j <= m - 1){
+            u = right_i*m + right_j;
+            //printf("NB# u:[%d] = row: %d, col: %d \n", u, right_i, right_j);
+            int weight = map[u];
+            dijkstra_relax(distance, previous, v, u, weight);
+        }
+
+        if (bottom_i <= n - 1){
+            u = bottom_i*m + bottom_j;
+            //printf("NB# u:[%d] = row: %d, col: %d \n", u, bottom_i, bottom_j);
+            int weight = map[u];
+            dijkstra_relax(distance, previous, v, u, weight);
+        }
+
+        if (left_j >= 0){
+            u = left_i*m + left_j;
+            //printf("NB# u:[%d] = row: %d, col: %d \n", u, left_i, left_j);
+            int weight = map[u];
+            dijkstra_relax(distance, previous, v, u, weight);
         }
     }
 }

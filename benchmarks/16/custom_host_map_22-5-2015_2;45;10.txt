@@ -1,0 +1,22 @@
+TYPE
+CPU
+
+RESULTS
+TOTAL TIME
+0.002799
+
+MAP
+DIM 4 4
+8 9 8 7 
+5 7 5 5 
+0 2 3 0 
+2 1 7 1 
+
+PATH
+15
+14
+13
+9
+5
+4
+EOF

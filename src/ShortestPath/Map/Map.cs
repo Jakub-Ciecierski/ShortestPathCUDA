@@ -110,8 +110,8 @@ namespace MapGUI
 
         private unsafe void initBitmap()
         {
-            int bitmapWidth = n* CELL_WIDTH + n + 1;
-            int bitmapHeight = m * CELL_HEIGHT + m + 1;
+            int bitmapWidth = m* CELL_WIDTH + m + 1;
+            int bitmapHeight = n * CELL_HEIGHT + n + 1;
 
             wBitmap = new WriteableBitmap(bitmapWidth, bitmapHeight, DPI_X, DPI_Y, PixelFormats.Rgb24, null);
 
@@ -172,17 +172,19 @@ namespace MapGUI
                         int cellI = (row - 1) / (CELL_WIDTH + 1);
                         int cellJ = (col - 1) / (CELL_HEIGHT + 1);
 
-                        int intR = (map[cellI][cellJ] *10);
+                        int adder = map[cellI][cellJ] > 0 ? 75 : 0;
+
+                        int intR = (map[cellI][cellJ] * 5 + adder);
                         if(intR > 255)
                             intR = 255;
                         byte R = (byte)intR;
 
-                        int intG = (map[cellI][cellJ] * 8);
+                        int intG = (map[cellI][cellJ] * 5 + adder);
                         if (intG > 255)
                             intG = 255;
                         byte G = (byte)intG;
 
-                        int intB = (map[cellI][cellJ] * 4);
+                        int intB = (map[cellI][cellJ] * 5 + adder);
                         if (intB > 255)
                             intB = 255;
                         byte B = (byte)intB;
@@ -207,7 +209,7 @@ namespace MapGUI
 
         private bool belongsToPath(int i, int j)
         {
-            int index = i * n + j;
+            int index = i * m + j;
             foreach (int v in shortestPath)
             {
                 if (v == index)

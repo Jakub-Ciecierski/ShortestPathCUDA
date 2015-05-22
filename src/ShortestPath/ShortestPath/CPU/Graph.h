@@ -1,5 +1,8 @@
 #ifndef _GRAPH_H_
 #define _GRAPH_H_
+#include "../Macros.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 typedef struct graph
 {

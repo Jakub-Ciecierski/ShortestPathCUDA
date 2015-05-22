@@ -73,70 +73,70 @@ namespace MapGUI
         private void mapFromFile(string filename)
         {
             string[] lines = System.IO.File.ReadAllLines(filename, Encoding.GetEncoding("ISO-8859-1"));
-            if (lines[0].Equals("MAP"))
+            int l = 0;
+            while (!lines[l++].Equals("MAP")) ;
+
+            int i;
+
+            string N = "";
+            string M = "";
+
+            bool turn = false;
+
+            foreach (char c in lines[l]) 
             {
-                int i;
-
-                string N = "";
-                string M = "";
-
-                bool turn = false;
-
-                foreach (char c in lines[1]) 
+                if (Char.IsDigit(c))
                 {
-                    if (Char.IsDigit(c))
-                    {
-                        if (!turn)
-                            N += c;
-                        else
-                            M += c;
-                    }
-                    if (c == ' ' && !N.Equals(""))
-                        turn = true;
+                    if (!turn)
+                        N += c;
+                    else
+                        M += c;
                 }
-
-                int n = Int32.Parse(N);
-                int m = Int32.Parse(M);
-
-                int[][] map = new int[n][];
-                for (i = 0; i < n; i++)
-                {
-                    map[i] = new int[m];
-                }
-
-                string line;
-
-                for (i = 0; i < n; i++)
-                {
-                    int j = 0;
-                    line = lines[i+2];
-                    int digitIndex = 0;
-
-                    while (digitIndex < line.Count())
-                    {
-                        string currentNumber = "";
-                        char c;
-
-                        while (Char.IsDigit(c = line[digitIndex++]))
-                        {
-                            currentNumber += c;
-                        }
-
-                        map[i][j] = Int32.Parse(currentNumber);
-                        j++;
-                    }
-                    
-                }
-
-                List<int> path = new List<int>();
-
-                while (!(line = lines[i++]).Equals("PATH")) ;
-                while (!(line = lines[i++]).Equals("EOF"))
-                {
-                    path.Add(Int32.Parse(line));
-                }
-                this.map.RenderMap(map, path, n, m);
+                if (c == ' ' && !N.Equals(""))
+                    turn = true;
             }
+            l++;
+            int n = Int32.Parse(N);
+            int m = Int32.Parse(M);
+
+            int[][] map = new int[n][];
+            for (i = 0; i < n; i++)
+            {
+                map[i] = new int[m];
+            }
+
+            string line;
+
+            for (i = 0; i < n; i++)
+            {
+                int j = 0;
+                line = lines[i+l];
+                int digitIndex = 0;
+
+                while (digitIndex < line.Count())
+                {
+                    string currentNumber = "";
+                    char c;
+
+                    while (Char.IsDigit(c = line[digitIndex++]))
+                    {
+                        currentNumber += c;
+                    }
+
+                    map[i][j] = Int32.Parse(currentNumber);
+                    j++;
+                }
+                    
+            }
+
+            List<int> path = new List<int>();
+
+            while (!(line = lines[i++]).Equals("PATH")) ;
+            while (!(line = lines[i++]).Equals("EOF"))
+            {
+                path.Add(Int32.Parse(line));
+            }
+            this.map.RenderMap(map, path, n, m);
         }
 
         private void gridDropFileHandler(object sender, DragEventArgs e)

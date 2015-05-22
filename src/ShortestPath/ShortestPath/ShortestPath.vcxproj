@@ -18,6 +18,22 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CPU\Graph.cpp" />
+    <ClCompile Include="CPU\ShortestPath.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Tests\TestCases.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CPU\Graph.h" />
+    <ClInclude Include="CPU\ShortestPath.h" />
+    <ClInclude Include="GPU\ShortestPathMap.cuh" />
+    <ClInclude Include="Macros.h" />
+    <ClInclude Include="Tests\TestCases.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="GPU\ShortestPathMap.cu" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8F60F532-D89B-48DD-A535-72DAE3D78D52}</ProjectGuid>
     <RootNamespace>ShortestPath</RootNamespace>
@@ -150,19 +166,6 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <CudaCompile Include="main.cu" />
-    <CudaCompile Include="shortest_path_cuda.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="graph.c" />
-    <ClCompile Include="shortest_path.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="graph.h" />
-    <ClInclude Include="shortest_path.h" />
-    <ClInclude Include="shortest_path_cuda.cuh" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 6.5.targets" />

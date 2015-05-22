@@ -213,8 +213,9 @@ void shortestPathLogic(int* d_map, int* d_distance, int* d_mask, int* d_previous
     }
     
     // SINGLE FLAG PINNED POINTER KERNEL
+    
     /*
-    cudaHostGetDevicePointer(&ptr_done, d_done, 0);
+    if ((err = cudaHostGetDevicePointer(&ptr_done, d_done, 0)) != cudaSuccess) CUDA_ERR(err);
     while (*d_done != 0){
         *d_done = 0;
         shortestPathRelaxationKernel << <DimGrid, DimBlock >> >(d_map, d_distance, d_mask,
@@ -223,8 +224,8 @@ void shortestPathLogic(int* d_map, int* d_distance, int* d_mask, int* d_previous
         //if ((err = cudaMemcpy(done, d_done, sizeof(int), cudaMemcpyDeviceToHost)) != cudaSuccess) CUDA_ERR(err);
         cudaDeviceSynchronize();
         //printf("Done: %d\n", *d_done);
-    }*/
-    
+    }
+    */
 
     // TEST
     /*
